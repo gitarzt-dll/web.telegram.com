@@ -1,0 +1,114 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #333;
+}
+
+.login-container {
+    background: #fff;
+    width: 360px;
+    max-width: 90%;
+    padding: 40px 30px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.7s ease forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.logo {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 20px;
+}
+
+.logo img {
+    width: 100%;
+    height: auto;
+    border-radius: 20%;
+}
+
+h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.subtitle {
+    color: #707579;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #707579;
+}
+
+.input-group select,
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+}
+
+/* Кнопка */
+.next-btn {
+    background: #37aee2;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 0;
+    width: 100%;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background 0.3s ease;
+}
+
+.next-btn:hover {
+    background: #1e96c8;
+}
+
+.qr-login {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #37aee2;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 25px 20px;
+    }
+    .logo {
+        width: 100px;
+        height: 100px;
+    }
+}
